@@ -2,11 +2,51 @@
 MongoDB database configuration and setup for Mergington High School API
 """
 
+import os
 from pymongo import MongoClient
 from argon2 import PasswordHasher, exceptions as argon2_exceptions
 
-# Connect to MongoDB
-client = MongoClient('mongodb://localhost:27017/')
+# Connect to MongoDB (fallback to in-memory db when MongoDB is unavailable)
+
+
+def _create_client():
+    """
+    Create and return a MongoDB client for the application.
+
+    This function attempts to connect to a MongoDB instance using configuration
+    from environment variables. If the connection check fails, it falls back
+    to an in-memory mock client provided by ``mongomock``.
+
+    Environment variables:
+        MONGODB_URI: MongoDB connection string. Defaults to
+            ``"mongodb://localhost:27017/"`` when not set.
+        MONGODB_SERVER_SELECTION_TIMEOUT_MS: Server selection timeout in
+            milliseconds. Defaults to ``"1500"`` when not set.
+
+    Returns:
+        pymongo.MongoClient or mongomock.MongoClient: A connected client if
+        the MongoDB server is reachable, otherwise an in-memory mock client.
+    """
+    mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
+    server_selection_timeout_ms = int(
+        os.getenv("MONGODB_SERVER_SELECTION_TIMEOUT_MS", "1500")
+    )
+
+    client = MongoClient(
+        mongodb_uri,
+        serverSelectionTimeoutMS=server_selection_timeout_ms,
+    )
+
+    try:
+        client.admin.command("ping")
+        return client
+    except Exception:
+        from mongomock import MongoClient as MockMongoClient
+
+        return MockMongoClient()
+
+
+client = _create_client()
 db = client['mergington_high']
 activities_collection = db['activities']
 teachers_collection = db['teachers']
