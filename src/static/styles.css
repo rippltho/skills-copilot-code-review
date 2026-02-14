@@ -73,6 +73,14 @@ header h2 {
   font-size: 1.2rem;
 }
 
+.announcement-banner {
+  background-color: var(--success);
+  color: white;
+  text-align: center;
+  padding: 15px;
+  font-weight: bold;
+}
+
 main {
   display: flex;
   flex-wrap: wrap;
